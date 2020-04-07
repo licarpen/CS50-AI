@@ -44,7 +44,7 @@ class Maze():
 
   def __init__(self, filename):
 
-    # read file of maze with start A and end B
+    # read file of maze with start A and goal B
     with open(filename) as f:
       contents = f.read()
 
@@ -70,6 +70,8 @@ class Maze():
             row.append(False)
           elif contents[i][j] == "B":
             self.goal = (i, j)
+            row.append(False)
+          elif contents[i][j] == " ":
             row.append(False)
           else:
             row.append(True)
@@ -157,3 +159,65 @@ class Maze():
         if not frontier.contains_state(state) and state not in self.explored:
           child = Node(state=state, parent=node, action=action)
           frontier.add(child)
+
+  def output_image(self, filename, show_solution=True, show_explored=False):
+    from PIL import Image, ImageDraw
+    cell_size = 50
+    cell_border = 2
+
+    # generate blank canvas
+    img = Image.new(
+      "RGBA",
+      (self.width * cell_size, self.height * cell_size),
+      "black"
+    )
+    draw = ImageDraw.Draw(img)
+
+    solution = self.solution[1] if self.solution is not None else None
+    for i, row in enumerate(self.walls):
+      for j, col in enumerate(row):
+
+        # walls
+        if col:
+          fill = (40, 40, 40)
+
+        # start
+        elif (i, j) == self.start:
+          fill = (255, 0, 0)
+
+        # goal
+        elif (i, j) == self.goal:
+          fill = (0, 171, 28)
+
+        # solution
+        elif solution is not None and show_solution and (i, j) in solution:
+          fill = (220, 235, 113)
+
+        # explored
+        elif solution is not None and show_explored and (i, j) in self.explored:
+          fill = (212, 97, 85)
+
+        # empty cell
+        else:
+          fill = (237, 240, 252)
+
+        # draw cell
+        draw.rectangle(
+          ([(j * cell_size + cell_border, i * cell_size + cell_border),
+          ((j + 1) * cell_size - cell_border, (i + 1) * cell_size - cell_border)]),
+          fill=fill
+        )
+    img.save(filename)
+
+if len(sys.argv) != 2:
+  sys.exit("Usage: python maze.py maze.txt")
+
+m = Maze(sys.argv[1])
+print("Maze:")
+m.print()
+print("Solving...")
+m.solve()
+print("States Explored:", m.num_explored)
+print("Solution:")
+m.print()
+m.output_image("maze.png", show_explored=True)
